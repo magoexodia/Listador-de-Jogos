@@ -1,0 +1,30 @@
+<!DOCTYPE html><html><head>
+<meta name="viewport" charset="UTF-8"content="width=device-width, initial-scale=1"></head>
+
+<body>
+<p id="aqui" style="font: 18px monospace"></p>
+</body>
+<script src="backup_letc.txt"></script>
+<script>
+
+
+function org_jogos (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){
+        b.push('{"nome":"' + a[i].nome + '", "flags":"'
+                + a[i].flags + '", "coments":"' + a[i].coments + '"}');
+    }
+    return b.sort();
+}
+function org_lista (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){        
+        b.push('{"grupo":"' + a[i].grupo + '", "jogos":[' + org_jogos(a[i].jogos) + ']}');
+    }
+    return '[' + b.sort() + "]";
+}
+document.getElementById("aqui").innerHTML = '<textarea id="transformado" name="transformado" style="width:100%;height:calc(97vh - 2rem);font: 20px monospace;" onmouseover="navigator.clipboard.writeText(this.value)"></textarea>';
+//document.getElementById("aqui").innerHTML = 
+document.getElementById("transformado").value = org_lista(JSON.parse(c));
+</script>
+</html>

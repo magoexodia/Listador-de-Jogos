@@ -1,0 +1,649 @@
+<!DOCTYPE html><html><head>
+<meta name="viewport" charset="UTF-8"content="width=device-width, initial-scale=1"></head>
+
+<style>
+:root { --base: 18px;}
+
+#aqui {text-align: center;}
+#massa_label {font-size: calc(var(--base) + 1rem); font-family: monospace;}
+.emote {height:1.5rem;}
+
+/*############################
+         tabela
+#############################*/
+#texto {width: 97vw;}
+.ctit {background: #98fb98aa; font-family: Arial;}
+.ctit, .cfim {border-radius: 12px;}
+.cabecalho {background: #93C572; position:sticky; top:0; border-radius:  1rem;}
+tr, th, .ccomen {border: 1px solid silver;}
+table {width: 100%; border: 2px solid #EEE;}
+.ctit {max-width: 90%; width:fit-content;}
+.cflag, .cfim {width: 3rem; text-align:center;height:1rem;}
+.cflag {white-space: nowrap;}
+.ccomen {min-width: 15rem; font-family: monospace;}
+
+
+/*############################
+       menu de radiobuttons
+#############################*/
+.bloco { display:inline-block; width: fit-content;}
+#pesq, .centro, .submenu { text-align: center; }
+.menu {z-index: 1; background: #EEFA;}
+
+
+
+/*############################
+       dropdown menu
+#############################*/
+.menu { position:fixed; top:0; left: 5%;}
+.submenu {display:none;}
+.menu:hover .submenu {display:block; }
+#pesquisa { position:fixed; top:4%; left:10%; text-align: center;}
+
+
+/*############################
+       menuzinho 
+#############################*/
+#filmenu {right:0%;}
+#addmenu {right:22%;}
+
+
+/*############################
+Ideia aqui é simplesmente aumentar a letra conforme o tamanho da tela
+#############################*/
+@media only screen and (orientation: portrait){
+    .cflag, .cfim {display:none;}
+    .bloco {display:inline-block;}
+    #linha {display: none;}
+    #filmenu {right:0%;}
+    #addmenu {right:30%;}
+    #pesquisa {right:60%;}
+}
+@media only screen and (max-width: 1299px){
+    select, p, label, textarea,
+    th, input, .ctit, .cflag {font-size: var(--base);}
+    .ccomen{font-size: calc(var(--base) - 2px);}
+}
+@media only screen and (min-width: 800px){
+    select, p, label, textarea,
+    th, input, .ctit, .cflag {font-size: calc(var(--base) + 2px);}
+    .ccomen{font-size: calc(var(--base) + 0px);}
+}
+@media only screen and (min-width: 1300px){
+    select, p, label, textarea,
+    th, input, .ctit, .cflag {font-size: calc(var(--base) + 4px);}
+    .ccomen{font-size: calc(var(--base) + 2px);}
+}
+@media only screen and (min-width: 1450px){
+    select, p, label, textarea,
+    th, input, .ctit, .cflag {font-size: calc(var(--base) + 6px);}
+    .ccomen{font-size: calc(var(--base) + 3px);}
+}
+</style>
+
+<body>
+<div>
+<p id="nessa_porra"></p>
+<p id="aqui" style="display:none;"></p>
+<p id="eaqui"></p>
+</div>
+<div>
+<p id="tabela"></p>
+</div>
+<p id="remocao"></p>
+<p id="adicao"></p>
+</body>
+
+<script>
+let tudo = "";
+</script>
+
+
+<script>
+
+function pega (quem){ return document.getElementById(quem); } //elemento por id
+function parsa (quem){ return JSON.parse(quem); }             // texto para objeto
+function stringa (quem){ return JSON.stringify(quem); }       // objeto para texto
+function sobre_esc (quem, oque){ return document.getElementById(quem).innerHTML = oque; } //escreve nohtml
+function escreve (quem, oque){ return document.getElementById(quem).innerHTML += oque; } //escreve nohtml
+
+function lista_grupo (){ //retorna array de string, contem nome de cada grupo
+    let ant = parsa(tudo);
+    let ret = [];
+    
+    for (let i = 0; i < ant.length; i++) {
+         ret.push(ant[i].grupo);
+    } 
+    return ret;
+}
+
+function lista_jogo (grupo){ //retorna array de string, contem nome de cada jogo no grupo x
+    let ant = parsa(tudo);
+    let ret = [];
+    
+    for (let i = 0; i < ant[grupo].jogos.length; i++) {
+         ret.push(ant[grupo].jogos[i].nome);
+    } 
+    return ret;
+}
+
+function acha_jogo (grupo, indice){ //retorna um objeto, pega o elemento y do grupo x
+    let ant = parsa(tudo);
+    return ant[grupo].jogos[indice];
+}
+
+function salva_jogo (gp, nm, fl, co, gruponovo=false){ //padroniza, ordena e insere
+    //'[{"grupo":"XBOX 360", "jogos":[{"nome":"Saint Row", "flags":"BG", "coments":"cracha o emulador"}]}]'
+    //padronização
+    let salvar = "";
+    if (gruponovo){
+       salvar = parsa('{"grupo":"' + gp +  '", "jogos":[{"nome":"' + nm +  '", "flags":"' + fl +  '", "coments":"' + co +  '"}]}');
+    } else {
+       salvar = parsa('{"nome":"' + nm +  '", "flags":"' + fl +  '", "coments":"' + co +  '"}');
+    }
+    //vai(Object.values(salvar));
+    if (tudo == "" && gruponovo) {tudo = '[' + stringa(salvar) + ']'; filtrar_menu(); return;}
+    
+    //ordenamento
+    let posg = 0;
+    let posj = 0;
+    let tem = 0;
+    if (!gruponovo){
+        posg = lista_grupo().indexOf(gp);
+        if (lista_jogo(posg).indexOf(nm) > -1) tem = 1; //tem == 1: substitui, tem = 0: adiciona;
+        posj = ordena(lista_jogo(posg), nm);
+    }
+    //vai(posg + ", " + posj + ", " + tem);
+    
+    //salvamento
+    let ant = parsa(tudo);
+    if (gruponovo){
+       ant.push(salvar);
+    } else {
+       ant[posg].jogos.splice(posj, tem, salvar);
+    }
+    
+    tudo = stringa(ant);
+}
+
+function remove_jogo (gp, nm){ //remove o elemento com seu nome e grupo
+    //ordenamento
+    let posg = 0;
+    let posj = 0;
+    posg = lista_grupo().indexOf(gp);
+    posj = lista_jogo(posg).indexOf(nm);
+    
+    //salvamento
+    let ant = parsa(tudo);
+    ant[posg].jogos.splice(posj, 1);
+    
+    tudo = stringa(ant);
+}
+
+function ordena (lista, termo){ //pega um array, concatena e retorna o índice do novo item já ordenado
+    let c = lista.concat(termo).sort();
+    return c.indexOf(termo);
+}
+
+function vai (oque){ escreve("adicao",oque + "<br>");}
+
+/*
+remove_jogo("XBOX", "Far cry 1 - instinct");
+escreve("remocao", tudo + "<br>");
+salva_jogo("XBOX 360", "Mafia 1", "cu", "cete");
+escreve("adicao", tudo + "<br>");
+salva_jogo("XBOX 360", "Mafia 1", "tesao", "da porra");
+escreve("adicao", tudo + "<br>");
+escreve("adicao", ordena(["anal", "vaga","vagina","vagaraosidade","pau marcado"], "cu"));*/
+</script>
+<script defer>
+
+function visibilidade (onde="individual"){
+    (pega(onde).style.visibility == 'visible')?pega(onde).style.visibility = 'hidden': pega(onde).style.visibility = 'visible';     
+}
+function mostra_bloco (onde="individual"){
+    (pega(onde).style.display == 'block')?pega(onde).style.display = 'none': pega(onde).style.display = 'block';
+}
+
+
+function enviar (event){
+    event.preventDefault();
+    let grupo = (pega("novo_g").checked)?pega("grupo_add").value : pega("grupo")[parseInt(pega("grupo").value)+1].text;
+    enviando(grupo,
+       pega("titulo").value,
+       pega("flag1").value,
+       pega("flag2").value,
+       pega("flag3").value,
+       pega("coment").value,
+       pega("novo_g").checked
+    );
+}
+function enviando (gp, nm, f1, f2, f3, co, nv=false){
+    //trata os elementos de entrada
+    //SALVAMENTO AQUI!!
+    let flag = f1.replace("!", "") + f2.replace("!", "") + f3.replace("!", "");
+    if (flag == "") flag = "!";
+
+    salva_jogo(gp, nm[0].toUpperCase() + nm.substr(1), flag, co, nv);
+    //torna o formulario invisivel
+    mostra_bloco("aqui");
+    //se texto de novo grupo é visivel, torna invisível
+    pega("ind_reset").click();
+    if (nv){
+        mostra_bloco("grupo_add");
+        repovoar();
+    }
+    filtrar_menu();
+}
+
+function org_jogos (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){
+        //b.push(Object.values(a[i]));
+        b.push('{"nome":"' + a[i].nome + '", "flags":"'
+                + a[i].flags + '", "coments":"' + a[i].coments + '"}');
+    }
+    return b.sort();
+}
+
+function org_lista (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){        
+        b.push('{"grupo":"' + a[i].grupo + '", "jogos":[' + org_jogos(a[i].jogos) + ']}');
+    }
+    return '[' + b.sort() + "]";
+}
+
+function enviarg (event){
+    event.preventDefault();
+    //enviando();
+    if (pega("massa").value.length > 50){
+        tudo = org_lista(parsa(pega("massa").value));
+        //tudo = pega("massa").value;
+    }
+    
+    repovoar();
+    filtrar_menu();
+    
+}
+const sep = "<>";
+function listar (){
+    if (tudo.length == 0){
+       return "";
+    }
+    let tex = [];
+    let novo = JSON.parse(tudo);
+    for (let i = 0; i < novo.length; i++) {
+         tex.push(novo[i].grupo);
+    }
+    return tex.join(sep);
+}
+
+
+function ampliar_grupo (onde, novo=[]){
+    if (novo == ""){pega(onde).innerHTML += (
+             '<option value="0">clique no +</option>' );
+    }
+    for (let i = 0; i < novo.length; i++) {
+         pega(onde).innerHTML += (
+             "<option value=" + i + ">" + novo[i] + "</option>" );
+    }
+}
+
+function ampliar_lista (onde, novo=[], conj=[]){
+    for (let i = 0; i < novo.length; i++) {
+         pega(onde).innerHTML += (
+             "<option value=" + conj[i] + ">" + novo[i] + "</option>" );
+    }
+}
+
+//const stat = "Finalizei,Desejo jogar,Quis e abri,Comecei,recem adquirido";
+const stat = "&#x1F4AF; Fim,&#x1F97A; Desejo,&#x1F929; Iniciei,&#x1F614; larguei,&#x1F380; Testar";
+//const rota = "Roda,Tem problemas,Nem abre,testar ainda";
+const rota = "&#x1F6EB; Roda,&#x2693; Problema,&#x1FA82; Nem abre,&#x1F380; Testar";
+//const love = "Odiei,reopinar,adorei,testarei em breve";
+const love = "&#x1F92C; Odiei,&#x1F610; Reopinar,&#x1F970; Adorei,&#x1F380; Testar";
+
+function repovoar (){
+    pega("grupo").innerHTML = '<option value="" selected hidden>Empresa ou console</option>';
+    ampliar_grupo ("grupo", listar().split(sep));
+}
+function inicializar (){
+    ampliar_grupo ("grupo", listar().split(sep));
+    ampliar_lista ("flag1", stat.split(','), "ABCD!");
+    ampliar_lista ("flag2", rota.split(','), "EFG!");
+    ampliar_lista ("flag3", love.split(','), "HIJ!");
+}
+</script>
+
+
+
+<!-- ########################################################################### -->
+<script>
+
+function form_simples (onde="individual"){
+    pega(onde).innerHTML = "";
+    let formul = (
+          '<br><br><form style="width:fit-content;height:15rem;display:inline-block;text-align:left;">' +
+              '<select name="grupo" id="grupo"><option value="escolher" selected hidden>&#x1F3ED; Onde jogo</option></select>' +
+              '<label for="novo_g">&#x1F195;</label><input id="novo_g" type="checkbox" unchecked style="display:none;">'+
+              '<input type="text" id="grupo_add" placeholder="&#x1F9E9; console ou empresa">' +
+              '<br><input type="text" id="titulo" placeholder="&#x1F3F7; nome do jogo &#x1F3AE;"><br>' +
+              '<select name="flag1" id="flag1"><option value="" selected hidden>&#x1F3A2; Gameplay</option></select><br>' +
+              '<select name="flag2" id="flag2"><option value="" selected hidden>&#x1F6B3; Execução</option></select><br>' +
+              '<select name="flag3" id="flag3"><option value="" selected hidden>&#x1F48C; Amor(!?)</option></select><br>' +
+              '<input type="text" id="coment" name="coment" maxlength=60 placeholder="&#x1F4AC; comentário (50 chars)"></textarea><br><br>' +
+              '<input type="submit" value="&#x1F197;" onclick="enviar(event)">&emsp;' +
+              '<input id="p_titulo" type="button" value="&#x1F50E;">&emsp;' +
+              '<input type="reset" id="ind_reset" value="&#x1F9FB;">' +
+          '</form>&emsp;<p id="listagem" style="display:inline-block;width:50vw;height:15rem;overflow-y:auto;text-align:left;"></p>');
+    pega(onde).innerHTML = formul;
+    inicializar();
+}
+
+function form_texto (onde="grande"){
+    pega(onde).innerHTML = "";
+    let formul = (
+          '<form>' +
+              '<table style="border:no;"><br><tr><p id="massa_label"><label for="massa"><strong>'+
+              'Se tiver um arquivo com tudo, cole o conteúdo aqui.<br>Senão, dá pra fazer 1 a 1. Só clicar no "new" lá em cima</strong>'+
+              '</label></p></tr>'+
+              '<tr><textarea id="massa" name="massa" style="width:98%;height:45vh;" placeholder='+
+              '\'[{"grupo":"EPIC", "jogos":[{"nome":"Alan wake", "flags":"E", "coments":"Algo aqui."}]}]\'></textarea><tr>'+
+              '<tr><input type="submit" value="&#x1F197;" onclick="enviarg(event)">'+
+              '<input type="reset" id="reset2" value="&#x1F9FB;" onclick="filtrar_menu()"></tr></table>' +
+          '</form>');
+    pega(onde).innerHTML = formul;
+    //inicializar();
+}
+
+form_simples("aqui");
+
+function reseta_manual (){
+    pega("grupo").value = "";
+    pega("titulo").value = "";
+    pega("flag1").value = "";
+    pega("flag2").value = "";
+    pega("flag3").value = "";
+    pega("coment").value = "";
+    pega("grupo_add").value = "";
+    pega("novo_g").checked = false;
+}
+
+function mostra_input (onde="individual"){
+    let como = 'initial';
+    (pega(onde).style.display == como)?pega(onde).style.display = 'none': pega(onde).style.display = como;
+}
+function mostra_novo_g (){
+    //pega("listagem").innerHTML = pega("novo_g").checked;
+    mostra_bloco("grupo_add");
+}
+function lista_grupo (){
+    pega("listagem").innerHTML = lista_jogo(parseInt(pega("grupo").value)).join("<br>");
+}
+function filtra_grupo (){
+    let novo = lista_jogo(parseInt(pega("grupo").value));
+    let ret = [];
+    pega("listagem").innerHTML = "";
+    for (let i = 0; i < novo.length; i++) {
+         if (novo[i].toLowerCase().includes(pega("titulo").value.toLowerCase())) ret.push(novo[i]);
+    }
+    pega("listagem").innerHTML = ret.join("<br>");
+    if (ret.length == 1) return ret[0];
+}
+function testa_az (a, z){ //flag, a-d/e-g/h-j/z
+    for (let i = 0; i < z.length; i++) {
+         if (a.includes(z[i])) return i;
+    }
+    return z.length;
+}
+function preenche_dados (){
+    let nome = filtra_grupo();
+    
+    let gp = parseInt(pega("grupo").value);
+    let jogo = acha_jogo(gp,
+                         lista_jogo(gp).indexOf(nome)
+                         ); //retorna objeto
+    
+    pega("listagem").innerHTML = "<br>&emsp; &emsp;" + Object.values(jogo).join("<br>&emsp; &emsp;");
+    
+    pega("titulo").value = jogo.nome;
+    pega("flag1").value = "ABCD!"[testa_az(jogo.flags, "ABCD")];
+    pega("flag2").value = "EFG!"[testa_az(jogo.flags, "EFG")];
+    pega("flag3").value = "HIJ!"[testa_az(jogo.flags, "HIJ")];
+    pega("coment").value = (jogo.coments == undefined)? "" : jogo.coments;
+    pega("listagem").innerHTML += '<br><br><br>&emsp; &emsp; &emsp; <input id="remove" type="button" value="&#x1F50E;Remover" onclick="remove_dados()"></input>';
+}
+function remove_dados (){
+    let nome = filtra_grupo();
+    
+    let gp = pega("grupo")[parseInt(pega("grupo").value) + 1].text;
+    let jogo = acha_jogo(parseInt(pega("grupo").value),
+                         lista_jogo(parseInt(pega("grupo").value)).indexOf(nome)
+                         );
+    vai('&#x26D4;' + gp + "&#x1F4E6;: " + Object.values(jogo).join("&ensp;->&ensp;"));
+
+    //execução
+    remove_jogo(gp, nome);
+    mostra_bloco("aqui");
+    pega("ind_reset").click();
+    filtrar_menu();
+}
+
+function eventiza (){
+    pega("grupo").addEventListener("change", lista_grupo);
+    pega("titulo").addEventListener("keyup", filtra_grupo);
+    pega("grupo_add").style.display = 'none';
+    pega("novo_g").addEventListener("change", mostra_novo_g);
+    pega("p_titulo").addEventListener("click", preenche_dados);
+}
+eventiza();
+</script>
+<!-- ######################################################################################### -->
+<script>
+    function apresentacao (filtro="", porFlag="", porNome="") {
+      let texto = "";
+      let termo = JSON.parse(tudo);
+      for (let i = 0; i < termo.length; i++) {
+        texto += filtragem(termo[i],  filtro, porFlag, porNome);
+      }
+      pega("eaqui").innerHTML = (texto.split("</tr><tr>").length);
+      return texto;
+    }
+
+  function filtragem (variavel, termo="", filtrar=0, porNome=0) {
+     let teste = (typeof variavel == "objeto")? JSON.parse(variavel):variavel; //let teste = JSON.parse(variavel);
+     let texto = "";
+     
+     for (let i = 0; i < teste.jogos.length; i++) {
+        if (filtrar && termo != ""){
+            if (!inclue(String(teste.jogos[i].flags), termo.split(sep)[1])) continue;
+            if (porNome){
+                if (!Object.values(teste.jogos[i]).concat(teste.grupo).join(',').toLowerCase().includes(termo.split(sep)[0])) continue;
+            }
+        }
+        texto += alinha_tabela( teste.grupo,
+                          String(teste.jogos[i].flags),
+                          String(teste.jogos[i].nome),
+                          String(teste.jogos[i].coments) );
+    }
+    return texto;
+  }
+  
+  
+  function inclue (texto, termo) {//retorna se está contido
+     return texto.includes(termo);
+  }
+
+  function contem (texto, termo) {//retorna se tem cada letra do termo
+    if (texto == "undefined" == termo) { return true; }
+    
+    for (let i = 0; i < termo.length; i++) {
+      if (texto.includes(termo[i]) ){ continue; }
+      return false;
+    }
+    return true;
+  }
+
+  function qual_grupo (quem){
+      if ("PC".includes(quem)) return "&#x1F4C0;";
+      if ("BIOS".includes(quem)) return "&#x1F4BF;";
+      if ("STEAM".includes(quem)) return '<img src="st_icon.jpg" alt="steam" class="emote">';
+      if ("EPIC".includes(quem)) return '<img src="ep_icon.png" alt="epic" class="emote">';
+      if ("UBISOFT".includes(quem)) return '<img src="ub_icon.png" alt="ubisoft" class="emote">';
+      if (quem.includes("DESEJO")) return "&#x1F31F;";
+      return (quem + "...").substr(0,5);
+  }
+
+  function alinha_tabela (gg, a, b, c) { //corrigir
+     //escreve('info', '<br>' + gg + " " + textoa + " " + textob + " " + textoc);
+     return ('<tr><td class="ctit" >' +
+        (a.includes('A')?"&#x1F4AF;":"&#x1F3B2;") +
+        b + //.toUpperCase() +
+        '</td><td class="cflag" >' +
+        emoja(a) +
+        '</td ><td class="ccomen">' + qual_grupo(gg.toUpperCase()) + '&ensp;&emsp;' +
+        c.replace("undefined", "&#x1F4DD;").substr(0, 40) +
+        '</td>'+
+        
+        '</input>' +
+        '</td></tr>');
+  }
+  
+const emo_af = ["&#x1F4AF;","&#x1F97A;","&#x1F929;","&#x1F614;",
+               "&#x1F6EB;","&#x2693;","&#x1FA82;", 
+               "&#x1F92C;","&#x1F610;","&#x1F970;"];
+
+function emoja (flags){
+    if (flags == "undefined"){ return "";}//"&#x1F4D6;&nbsp;&#x1F58D;"; }
+    let af = emo_af;
+    const t = "ABCDEFGHIJ";
+
+    let text = "";
+    for (let i = 0; i < t.length; i++) {
+      text += (flags.includes(t[i]))? af[i]: "";
+    }
+    return text;
+}
+
+    function tabelar (  filtro="", porFlag=0, porNome=0, onde="tabela") {      
+      sobre_esc(onde, '<table id="lista_completa"><tr>' +
+          //'<th class="cfim cabecalho"> &#x1F3A2;</th>' +
+          '<th class="ctit cabecalho"> &#x1F4B3;&#x1F3AE;</th>' +
+          '<th class="cflag cabecalho" style="width:5em">&#x1F4DA;&#x1F4CB;</th>' +
+          '<th class="ccomen cabecalho">&#x1F4AD;&#x1F4AC;&#x1F5E8;</th></tr>' +
+          apresentacao(filtro, porFlag, porNome) +
+          '</table>');
+    }
+
+    function filtrar_tag(item='z', porNome=false, onde="tabela") {
+        if (porNome){
+            tabelar(item.toLowerCase(), 1, porNome, onde);
+            return;
+        } else if (item.length >= 1){
+            switch (item) {
+              case 'T': tabelar("undefined", 1, 0, onde); break; //testar
+              case 'Z': tabelar("", 0, onde); break;
+              default : tabelar(item, 1, 0, onde); break;
+            }
+            return;
+        }
+
+    }
+    
+function filtrar_menu () {
+    tabelar(
+    //vai(
+         document.getElementById("pesq").value.toLowerCase() + sep +
+         document.getElementById("fil_f1").value +
+         document.getElementById("fil_f2").value +
+         document.getElementById("fil_f3").value
+        , 1, true, 'tabela');
+          //);
+}
+function m_m_vag (){mostra_bloco("aqui");}
+
+function ctrl_c (texto){navigator.clipboard.writeText(texto);}
+
+function exporta_tudo (){
+   sobre_esc ("tabela", "<br><br><strong>copie o texto abaixo</strong><br>"
+             + "<textarea class=\"centro\" style='width:85%;height:50vh;' onfocus='ctrl_c(this.value)'>" + tudo + "</textarea>"
+             + "<br><br><strong>isso é tudo.</strong>");
+}
+
+function importa_tudo (){
+   form_texto("tabela");
+}
+
+function barra_pesquisa_tam (){
+    if (pega("pesq").value.length > 0) { 
+         pega("pesq").style.width = "initial";
+    } else if (pega("pesq").value == "") { 
+         pega("pesq").style.width = "2rem";
+    }
+}
+
+function faz_nada (){
+    filtrar_menu();
+    return false;
+}
+
+function pesquisa_eventos (){
+    pega("fil_f1").addEventListener("change", filtrar_menu);
+    pega("fil_f2").addEventListener("change", filtrar_menu);
+    pega("fil_f3").addEventListener("change", filtrar_menu);
+    pega("pesq").addEventListener("keyup", filtrar_menu);
+    pega("pesq").addEventListener("keydown", filtrar_menu);
+    pega("pesq").addEventListener("keyup", barra_pesquisa_tam);
+    pega("fil_res").addEventListener("click", tabelar);
+    //pega("form_filtro").addEventListener("submit", faz_nada);
+}
+
+function novo_jogo (){
+    mostra_bloco("aqui");
+    (pega("tabela").innerHTML == "")? (tudo == "")? form_texto("tabela") : filtrar_menu() : pega("tabela").innerHTML = "";
+}
+
+    function pesquisa_menu (onde){
+        pega(onde).innerHTML = ( 
+          '<div id="menu_escolha" class="menu">'
+          +'<form onsubmit="faz_nada(); return false;">'
+          +'  <table style="border:none;"><td><input id="add_jogo" type="button" onclick="novo_jogo()" value="&#x1F195;"></input>'
+          +'  <input id="imp_tudo" type="button" value="&#x26FD;" onclick="importa_tudo()">'
+          +'  <input id="do_backup" type="button" value="&#x1F4DA;" onclick="fonte_backup(\'tabela\')"></td><td>&ensp;</td><td>'
+          +'  <input id="exp_tudo" type="button" value="&#x1F51C;" onclick="exporta_tudo()"></td><td>&ensp;</td>'
+          +'  <td><input type="text" style="width:2rem" id="pesq" name="nomejogo" value="" placeholder="&#x1F50D;" maxlength=50>'
+          +'  <select name="fil_f1" id="fil_f1">' 
+          +'    <option value="" selected>&#x1F6E3;</option>' 
+          +'    <option value="A">' + emo_af[0] + '</option>' 
+          +'    <option value="B">' + emo_af[1] + '</option>' 
+          +'    <option value="C">' + emo_af[2] + '</option>' 
+          +'    <option value="D">' + emo_af[3] + '</option>' 
+          +'  </select><select name="fil_f2" id="fil_f2">' 
+          +'    <option value="" selected>&#x1F6A9;</option>' 
+          +'    <option value="E">' + emo_af[4] + '</option>' 
+          +'    <option value="F">' + emo_af[5] + '</option>' 
+          +'    <option value="G">' + emo_af[6] + '</option>' 
+          +'  </select><select name="fil_f3" id="fil_f3">' 
+          +'    <option value="" selected>&#x1F48C;</option>' 
+          +'    <option value="H">' + emo_af[7] + '</option>' 
+          +'    <option value="I">' + emo_af[8] + '</option>' 
+          +'    <option value="J">' + emo_af[9] + '</option>' 
+          +'</select></td><td>&ensp;</td><td><input id="fil_res" type="reset" value="&#x274E;"></td></table></form>'
+          +'</div>'
+        );
+    }
+
+function fonte_backup (onde){
+    pega(onde).innerHTML = '<iframe src="reordenar.html" id="iframe_backup" name="lista" style="width:100%;height:calc(97vh - 5.2rem);margin-top:3rem;background:silver;"></iframe>';
+}
+
+pesquisa_menu("nessa_porra");
+pesquisa_eventos();
+(tudo == "")? form_texto("tabela") : tabelar("");
+
+window.onbeforeunload = salva;
+function salva () {}
+</script>
+</body>
+</html>

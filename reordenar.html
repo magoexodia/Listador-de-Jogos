@@ -1,0 +1,33 @@
+<!DOCTYPE html><html><head>
+<meta name="viewport" charset="UTF-8"content="width=device-width, initial-scale=1"></head>
+
+<body>
+<p style="font: 22px monospace">
+Reordenador de valores. <br> Dica: <strong>[{"grupo":"EPIC", "jogos":[{"nome":"Alan wake", "flags":"E", "coments":"Algo aqui."}]}] </strong><br> ou <strong>
+[{"grupo":"Epic", "jogos":[{"nome":"Alan wake", "flags":"E", "coments":"Algo aqui."}]},{"grupo":"Steam", "jogos":[{"nome":"Alan wake", "flags":"E", "coments":"Algo aqui."}]}]</strong>
+<p>
+<p id="aqui" style="font: 18px monospace"></p>
+</body>
+<script>
+
+
+function org_jogos (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){
+        b.push('{"nome":"' + a[i].nome + '", "flags":"'
+                + a[i].flags + '", "coments":"' + a[i].coments + '"}');
+    }
+    return b.sort();
+}
+function org_lista (a = []){
+    let b = [];
+    for (let i = 0; i < a.length; i++){        
+        b.push('{"grupo":"' + a[i].grupo + '", "jogos":[' + org_jogos(a[i].jogos) + ']}');
+    }
+    return '[' + b.sort() + "]";
+}
+document.getElementById("aqui").innerHTML = '<textarea id="origem" name="origem" style="width:100%;height:calc(48vh - 2rem);font: 20px monospace;" onchange="trans()" placeholder="Texto original aqui!!!"></textarea><textarea id="transformado" name="transformado" style="width:100%;height:calc(48vh - 2rem);font: 20px monospace;" onfocus="navigator.clipboard.writeText(this.value)" placeholder="resultado final aqui!!!"></textarea>';
+//document.getElementById("aqui").innerHTML = 
+function trans () {document.getElementById("transformado").value = org_lista(JSON.parse(document.getElementById("origem").value));}
+</script>
+</html>
